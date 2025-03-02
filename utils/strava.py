@@ -31,8 +31,6 @@ def exchange_code_for_token(code):
     """
     Exchange authorization code for access token
     """
-    print(f"Exchanging auth code for token: {code}")
-    
     payload = {
         'client_id': CLIENT_ID,
         'client_secret': CLIENT_SECRET,
@@ -42,10 +40,8 @@ def exchange_code_for_token(code):
     
     try:
         response = requests.post(TOKEN_URL, data=payload)
-        print(f"Token exchange response: {response.status_code}")
         
         if response.status_code != 200:
-            print(f"Error response: {response.text}")
             return None
         
         token_data = response.json()
@@ -56,7 +52,6 @@ def exchange_code_for_token(code):
             'expires_at': token_data['expires_at']
         }
     except Exception as e:
-        print(f"Token exchange error: {str(e)}")
         return None
 
 def refresh_access_token(refresh_token):

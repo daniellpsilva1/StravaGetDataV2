@@ -33,13 +33,11 @@ if 'offline_mode' not in st.session_state:
 
 # Check authentication from URL parameters (after Strava callback)
 current_url = st.experimental_get_query_params()
-st.write("Debug - Query Parameters:", current_url)  # Show current URL parameters
 
 if 'code' in current_url and not st.session_state.authenticated:
     with st.spinner('Authenticating with Strava...'):
         try:
             code = current_url['code'][0]  # Get the first value as query params are returned as lists
-            st.write(f"Debug - Auth Code: {code[:5]}...")  # Show only first few chars for security
             token_data = exchange_code_for_token(code)
             
             if token_data:
@@ -48,16 +46,14 @@ if 'code' in current_url and not st.session_state.authenticated:
                 st.session_state.user_id = user_id
                 st.session_state.authenticated = True
                 
-                # Clear URL parameters - can't directly clear in older Streamlit versions
-                # Instead, we'll rerun the app which effectively removes parameters
+                # Clear URL parameters by rerunning the app
                 st.success("Successfully authenticated with Strava!")
                 time.sleep(1)
                 st.rerun()
             else:
                 st.error("Authentication failed. Please try again.")
         except Exception as e:
-            st.error(f"Authentication error: {str(e)}")
-            st.info("If you're having trouble, try logging into Strava directly and then return to this app.")
+            st.error("Authentication error. Please try again.")
 
 # Sidebar navigation
 st.sidebar.title("Strava Dashboard")
@@ -110,15 +106,11 @@ if page == "Home":
         if "streamlit.app" in redirect_uri and not redirect_uri.startswith("http"):
             redirect_uri = "https://" + redirect_uri
         
-        # Display debug information
-        st.info(f"Debug info - Current redirect URI: {redirect_uri}")
-        
         auth_url = get_auth_url(redirect_uri)
-        st.info(f"Debug info - Authorization URL: {auth_url}")
         
         st.markdown(f"<a href='{auth_url}'><button style='background-color:#FC4C02; color:white; padding:10px; border-radius:5px; border:none;'>Connect with Strava</button></a>", unsafe_allow_html=True)
         st.markdown("""
-        **Important instructions:**
+        **Instructions:**
         1. Click the button above to connect with Strava
         2. Sign in to Strava if prompted
         3. Click the orange 'Authorize' button on the Strava page
