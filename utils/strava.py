@@ -20,6 +20,10 @@ def get_auth_url(redirect_uri):
     """
     Generate Strava authorization URL
     """
+    # Ensure the redirect URI is properly formatted for Strava
+    if redirect_uri and not redirect_uri.startswith("http"):
+        redirect_uri = "https://" + redirect_uri
+        
     scope = "read,activity:read_all"
     return f"{AUTH_URL}?client_id={CLIENT_ID}&response_type=code&redirect_uri={redirect_uri}&scope={scope}&approval_prompt=force"
 

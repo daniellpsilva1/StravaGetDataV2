@@ -103,9 +103,14 @@ if page == "Home":
         
         # Generate a redirect URL to this app
         redirect_uri = st.secrets.get("REDIRECT_URI", "http://localhost:8501")
+        # For Streamlit Cloud, make sure we're using https
+        if redirect_uri.startswith("stravagetdatav2.streamlit.app"):
+            redirect_uri = "https://" + redirect_uri
+        
+        st.write(f"Redirect URI: {redirect_uri}")  # Debug info - can remove later
         auth_url = get_auth_url(redirect_uri)
         
-        st.markdown(f"<a href='{auth_url}' target='_blank'><button style='background-color:#FC4C02; color:white; padding:10px; border-radius:5px; border:none;'>Connect with Strava</button></a>", unsafe_allow_html=True)
+        st.markdown(f"<a href='{auth_url}' target='_self'><button style='background-color:#FC4C02; color:white; padding:10px; border-radius:5px; border:none;'>Connect with Strava</button></a>", unsafe_allow_html=True)
         st.markdown("**Note:** If you encounter any issues with the redirect, please sign in directly to Strava first in another tab, then return here and click the connect button.", unsafe_allow_html=True)
     else:
         st.write("You are connected to Strava! Use the sidebar to navigate.")
