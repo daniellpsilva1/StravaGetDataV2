@@ -32,10 +32,10 @@ if 'offline_mode' not in st.session_state:
     st.session_state.offline_mode = False
 
 # Check authentication from URL parameters (after Strava callback)
-current_url = st.query_params
+current_url = st.experimental_get_query_params()
 if 'code' in current_url and not st.session_state.authenticated:
     with st.spinner('Authenticating with Strava...'):
-        code = current_url['code']
+        code = current_url['code'][0]  # Get the first value as query params are returned as lists
         token_data = exchange_code_for_token(code)
         
         if token_data:
@@ -44,8 +44,8 @@ if 'code' in current_url and not st.session_state.authenticated:
             st.session_state.user_id = user_id
             st.session_state.authenticated = True
             
-            # Clear URL parameters
-            st.query_params.clear()
+            # Clear URL parameters - can't directly clear in older Streamlit versions
+            # Instead, we'll rerun the app which effectively removes parameters
             st.success("Successfully authenticated with Strava!")
             time.sleep(1)
             st.rerun()
