@@ -35,20 +35,26 @@ if 'offline_mode' not in st.session_state:
 current_url = st.experimental_get_query_params()
 if 'code' in current_url and not st.session_state.authenticated:
     with st.spinner('Authenticating with Strava...'):
-        code = current_url['code'][0]  # Get the first value as query params are returned as lists
-        token_data = exchange_code_for_token(code)
-        
-        if token_data:
-            user_id = token_data['user_id']
-            save_user(user_id, token_data['access_token'], token_data['refresh_token'], token_data['expires_at'])
-            st.session_state.user_id = user_id
-            st.session_state.authenticated = True
+        try:
+            code = current_url['code'][0]  # Get the first value as query params are returned as lists
+            token_data = exchange_code_for_token(code)
             
-            # Clear URL parameters - can't directly clear in older Streamlit versions
-            # Instead, we'll rerun the app which effectively removes parameters
-            st.success("Successfully authenticated with Strava!")
-            time.sleep(1)
-            st.rerun()
+            if token_data:
+                user_id = token_data['user_id']
+                save_user(user_id, token_data['access_token'], token_data['refresh_token'], token_data['expires_at'])
+                st.session_state.user_id = user_id
+                st.session_state.authenticated = True
+                
+                # Clear URL parameters - can't directly clear in older Streamlit versions
+                # Instead, we'll rerun the app which effectively removes parameters
+                st.success("Successfully authenticated with Strava!")
+                time.sleep(1)
+                st.rerun()
+            else:
+                st.error("Authentication failed. Please try again.")
+        except Exception as e:
+            st.error(f"Authentication error: {str(e)}")
+            st.info("If you're having trouble, try logging into Strava directly and then return to this app.")
 
 # Sidebar navigation
 st.sidebar.title("Strava Dashboard")
@@ -99,7 +105,8 @@ if page == "Home":
         redirect_uri = st.secrets.get("REDIRECT_URI", "http://localhost:8501")
         auth_url = get_auth_url(redirect_uri)
         
-        st.markdown(f"<a href='{auth_url}' target='_self'><button style='background-color:#FC4C02; color:white; padding:10px; border-radius:5px; border:none;'>Connect with Strava</button></a>", unsafe_allow_html=True)
+        st.markdown(f"<a href='{auth_url}' target='_blank'><button style='background-color:#FC4C02; color:white; padding:10px; border-radius:5px; border:none;'>Connect with Strava</button></a>", unsafe_allow_html=True)
+        st.markdown("**Note:** If you encounter any issues with the redirect, please sign in directly to Strava first in another tab, then return here and click the connect button.", unsafe_allow_html=True)
     else:
         st.write("You are connected to Strava! Use the sidebar to navigate.")
         
