@@ -7,10 +7,8 @@ from utils.db import save_user, get_user, save_activities, get_user_activities, 
 from utils.strava import get_auth_url, exchange_code_for_token, get_activities
 from utils.visualization import (
     prepare_activity_data,
-    create_activity_type_chart,
-    create_distance_time_chart,
-    create_weekly_activity_chart,
-    create_monthly_distance_chart
+    create_weekly_volume_chart,
+    create_weekly_velocity_chart
 )
 
 # Page configuration
@@ -33,7 +31,6 @@ if 'offline_mode' not in st.session_state:
 
 # Check authentication from URL parameters (after Strava callback)
 current_url = st.experimental_get_query_params()
-
 if 'code' in current_url and not st.session_state.authenticated:
     with st.spinner('Authenticating with Strava...'):
         try:
@@ -46,14 +43,16 @@ if 'code' in current_url and not st.session_state.authenticated:
                 st.session_state.user_id = user_id
                 st.session_state.authenticated = True
                 
-                # Clear URL parameters by rerunning the app
+                # Clear URL parameters - can't directly clear in older Streamlit versions
+                # Instead, we'll rerun the app which effectively removes parameters
                 st.success("Successfully authenticated with Strava!")
                 time.sleep(1)
                 st.rerun()
             else:
                 st.error("Authentication failed. Please try again.")
         except Exception as e:
-            st.error("Authentication error. Please try again.")
+            st.error(f"Authentication error: {str(e)}")
+            st.info("If you're having trouble, try logging into Strava directly and then return to this app.")
 
 # Sidebar navigation
 st.sidebar.title("Strava Dashboard")
@@ -103,19 +102,14 @@ if page == "Home":
         # Generate a redirect URL to this app
         redirect_uri = st.secrets.get("REDIRECT_URI", "http://localhost:8501")
         # For Streamlit Cloud, make sure we're using https
-        if "streamlit.app" in redirect_uri and not redirect_uri.startswith("http"):
+        if redirect_uri.startswith("stravagetdatav2.streamlit.app"):
             redirect_uri = "https://" + redirect_uri
         
+        st.write(f"Redirect URI: {redirect_uri}")  # Debug info - can remove later
         auth_url = get_auth_url(redirect_uri)
         
-        st.markdown(f"<a href='{auth_url}'><button style='background-color:#FC4C02; color:white; padding:10px; border-radius:5px; border:none;'>Connect with Strava</button></a>", unsafe_allow_html=True)
-        st.markdown("""
-        **Instructions:**
-        1. Click the button above to connect with Strava
-        2. Sign in to Strava if prompted
-        3. Click the orange 'Authorize' button on the Strava page
-        4. You will be redirected back to this app
-        """)
+        st.markdown(f"<a href='{auth_url}' target='_self'><button style='background-color:#FC4C02; color:white; padding:10px; border-radius:5px; border:none;'>Connect with Strava</button></a>", unsafe_allow_html=True)
+        st.markdown("**Note:** If you encounter any issues with the redirect, please sign in directly to Strava first in another tab, then return here and click the connect button.", unsafe_allow_html=True)
     else:
         st.write("You are connected to Strava! Use the sidebar to navigate.")
         
@@ -216,25 +210,19 @@ elif page == "Visualizations":
                     st.metric("Total Time (hours)", total_time)
             
             with col4:
-                if 'type' in df.columns:
-                    activity_types = df['type'].nunique()
-                    st.metric("Activity Types", activity_types)
+                if 'velocity_kmh' in df.columns:
+                    avg_velocity = round(df['velocity_kmh'].mean(), 2)
+                    st.metric("Avg Velocity (km/h)", avg_velocity)
             
             # Select visualization tab
             st.subheader("Visualizations")
-            tab1, tab2, tab3, tab4 = st.tabs(["Activity Types", "Distance vs Time", "Weekly Activity", "Monthly Distance"])
+            tab1, tab2 = st.tabs(["Weekly Volume", "Weekly Velocity"])
             
             with tab1:
-                st.plotly_chart(create_activity_type_chart(df), use_container_width=True)
+                st.plotly_chart(create_weekly_volume_chart(df), use_container_width=True)
             
             with tab2:
-                st.plotly_chart(create_distance_time_chart(df), use_container_width=True)
-            
-            with tab3:
-                st.plotly_chart(create_weekly_activity_chart(df), use_container_width=True)
-            
-            with tab4:
-                st.plotly_chart(create_monthly_distance_chart(df), use_container_width=True)
+                st.plotly_chart(create_weekly_velocity_chart(df), use_container_width=True)
 
 if __name__ == "__main__":
     # Run the app
